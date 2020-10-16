@@ -107,7 +107,8 @@ export var tns = function(options) {
     preventScrollOnTouch: false,
     freezable: true,
     onInit: false,
-    useLocalStorage: true
+    useLocalStorage: true,
+    nonce: false
   }, options || {});
 
   var doc = document,
@@ -284,7 +285,7 @@ export var tns = function(options) {
       autoplayText = getOption('autoplayText'),
       autoplayHoverPause = getOption('autoplayHoverPause'),
       autoplayResetOnVisibility = getOption('autoplayResetOnVisibility'),
-      sheet = createStyleSheet(),
+      sheet = createStyleSheet(null, getOption('nonce')),
       lazyload = options.lazyload,
       lazyloadSelector = options.lazyloadSelector,
       slidePositions, // collection of slide positions
@@ -304,7 +305,7 @@ export var tns = function(options) {
           return function() { return center && !loop ? slideCount - 1 : Math.ceil(- rightBoundary / (fixedWidth + gutter)); };
         } else if (autoWidth) {
           return function() {
-            for (var i = slideCountNew; i--;) {
+            for (var i = 0; i < slideCountNew; i++) {
               if (slidePositions[i] >= - rightBoundary) { return i; }
             }
           };
@@ -371,6 +372,7 @@ export var tns = function(options) {
       hasTouch = hasOption('touch'),
       hasMouseDrag = hasOption('mouseDrag'),
       slideActiveClass = 'tns-slide-active',
+      slideClonedClass = 'tns-slide-cloned',
       imgCompleteClass = 'tns-complete',
       imgEvents = {
         'load': onImgLoaded,
@@ -736,11 +738,13 @@ export var tns = function(options) {
       for (var j = cloneCount; j--;) {
         var num = j%slideCount,
             cloneFirst = slideItems[num].cloneNode(true);
+        addClass(cloneFirst, slideClonedClass);
         removeAttrs(cloneFirst, 'id');
         fragmentAfter.insertBefore(cloneFirst, fragmentAfter.firstChild);
 
         if (carousel) {
           var cloneLast = slideItems[slideCount - 1 - num].cloneNode(true);
+          addClass(cloneLast, slideClonedClass);
           removeAttrs(cloneLast, 'id');
           fragmentBefore.appendChild(cloneLast);
         }
@@ -796,7 +800,7 @@ export var tns = function(options) {
   }
 
   function initSliderTransformStyleCheck () {
-    if (autoWidth) {
+    if (autoWidth && slideCount > 1) {
       // check styles application
       var num = loop ? index : slideCount - 1;
 
@@ -1379,9 +1383,12 @@ export var tns = function(options) {
       }
     }
     if (nav !== navTem) {
-      nav ?
-        showElement(navContainer) :
-        hideElement(navContainer);
+      if (nav) {
+        showElement(navContainer);
+        updateNavVisibility();
+      } else {
+        hideElement(navContainer)
+      }
     }
     if (touch !== touchTem) {
       touch ?
@@ -2742,7 +2749,7 @@ export var tns = function(options) {
   }
 
   return {
-    version: '2.9.2',
+    version: '2.9.3',
     getInfo: info,
     events: events,
     goTo: goTo,
